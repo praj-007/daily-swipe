@@ -53,7 +53,11 @@ def run(action: str, dry_run: bool) -> None:
             page.locator(S.USERNAME).fill(username)
             page.locator(S.PASSWORD).fill(password)
             page.locator(S.LOGIN_BUTTON).click()
-            page.wait_for_selector(S.DASHBOARD_READY, timeout=NAV_TIMEOUT_MS)
+            # Login redirects through the OIDC IdP and back; wait for the dashboard
+            # to render either swipe button (whichever reflects current state).
+            page.locator(S.SIGN_IN_BUTTON).or_(page.locator(S.SIGN_OUT_BUTTON)).first.wait_for(
+                state="visible", timeout=NAV_TIMEOUT_MS
+            )
 
             signed_in = page.locator(S.SIGN_OUT_BUTTON).count() > 0
             print(f"Current state: {'SIGNED IN' if signed_in else 'SIGNED OUT'}")
