@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from playwright.sync_api import TimeoutError as PWTimeout, sync_playwright
+from playwright.sync_api import sync_playwright
 
 import locators as S
 
@@ -81,14 +81,14 @@ def run(action: str, dry_run: bool) -> None:
 
             page.screenshot(path=str(shot))
             print(f"Screenshot saved: {shot}")
-        except PWTimeout as exc:
+        except Exception as exc:
             fail_shot = SCREENSHOT_DIR / f"FAILED-{action}-{_timestamp()}.png"
             try:
                 page.screenshot(path=str(fail_shot))
                 print(f"Failure screenshot: {fail_shot}", file=sys.stderr)
             except Exception:
                 pass
-            print(f"ERROR: timed out during {action}: {exc}", file=sys.stderr)
+            print(f"ERROR during {action}: {exc}", file=sys.stderr)
             sys.exit(1)
         finally:
             browser.close()
