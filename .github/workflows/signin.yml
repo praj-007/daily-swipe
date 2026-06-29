@@ -12,14 +12,14 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
       - name: Decide whether today is a working day (IST)
         id: check
         run: python should_run.py
-      - name: Install dependencies
+      - name: Install Chromium browser
         if: steps.check.outputs.should_run == 'true'
-        run: |
-          pip install -r requirements.txt
-          python -m playwright install --with-deps chromium
+        run: python -m playwright install --with-deps chromium
       - name: Sign in
         if: steps.check.outputs.should_run == 'true'
         env:
