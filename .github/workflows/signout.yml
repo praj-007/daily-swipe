@@ -1,0 +1,36 @@
+name: greytHR Sign Out
+on:
+  schedule:
+    - cron: "0 13 * * 1-5"  # 18:30 IST (UTC = IST - 5:30)
+  workflow_dispatch:
+
+jobs:
+  signout:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Decide whether today is a working day (IST)
+        id: check
+        run: python should_run.py
+      - name: Install dependencies
+        if: steps.check.outputs.should_run == 'true'
+        run: |
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+      - name: Sign out
+        if: steps.check.outputs.should_run == 'true'
+        env:
+          GREYTHR_URL: ${{ secrets.GREYTHR_URL }}
+          GREYTHR_USERNAME: ${{ secrets.GREYTHR_USERNAME }}
+          GREYTHR_PASSWORD: ${{ secrets.GREYTHR_PASSWORD }}
+        run: python attendance.py signout
+      - name: Upload screenshot
+        if: always() && steps.check.outputs.should_run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: signout-screenshot
+          path: screenshots/
+          if-no-files-found: ignore
