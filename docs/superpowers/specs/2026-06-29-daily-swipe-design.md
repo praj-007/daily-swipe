@@ -21,15 +21,16 @@ automation drives the existing UI the same way a human does.
 ## Non-Goals
 
 - No use of the admin-only OAuth2 Attendance Swipe API.
-- No automatic detection of personal leave (the user manually pauses for leave).
+- No automatic detection of personal leave from greytHR (leave is paused by the
+  user, either via `leave.yaml` date ranges or by disabling the workflow).
 - No to-the-minute scheduling precision (GitHub cron drift of ~5–15 min is accepted).
 
 ## Constraints (confirmed with user)
 
 - Login is **username + password only** — no OTP/2FA/SSO/captcha.
 - **No IP or geo restriction** on web sign-in — a cloud datacenter IP works.
-- Working days = **weekdays minus a user-supplied holiday list**; personal leave is
-  handled by the user manually disabling the schedule.
+- Working days = **weekdays minus a user-supplied holiday list minus user-supplied
+  leave ranges**; ad-hoc days off can also be handled by disabling the workflow.
 
 ## Architecture
 
@@ -52,8 +53,10 @@ installs cleanly on GitHub Actions runners).
   (`signin` / `signout`); logs in, reads current swipe state, performs the action if
   needed, verifies the state flipped, and writes a screenshot.
 - **`should_run.py`** — small helper that returns skip/run based on whether *today
-  in IST* is a weekend or listed in `holidays.yaml`.
+  in IST* is a weekend, listed in `holidays.yaml`, or inside a range in `leave.yaml`.
 - **`holidays.yaml`** — user-editable list of public-holiday dates to skip.
+- **`leave.yaml`** — user-editable list of personal-leave date ranges to skip;
+  auto-resumes after the range ends.
 - **`.github/workflows/signin.yml`** and **`signout.yml`** — the two cron schedules.
 - **`requirements.txt`** — pinned dependencies (`playwright`, `pyyaml`).
 - **`.gitignore`** — excludes the local git token file, `.env`, and any secrets
@@ -62,8 +65,9 @@ installs cleanly on GitHub Actions runners).
 
 ## Control flow (per run)
 
-1. Workflow fires on cron → `should_run.py` checks weekday + not a holiday, computed
-   in **IST**. If skip → exit 0 cleanly without touching greytHR.
+1. Workflow fires on cron → `should_run.py` checks, in **IST**, that today is a
+   weekday, not in `holidays.yaml`, and not inside any range in `leave.yaml`.
+   If any check says skip → exit 0 cleanly without touching greytHR.
 2. Launch headless Chromium → open the portal → wait for the SPA to render →
    fill username + password (from secrets) → click Login → wait for the dashboard.
 3. **Idempotency check:** read the dashboard's current swipe state. The portal shows
@@ -90,6 +94,21 @@ on the cron clock.
 
 **Accepted caveat:** GitHub's scheduled start can drift ~5–15 minutes under load.
 Acceptable for attendance; if exact timing is ever required, migrate to a VM + cron.
+
+## Pausing for time off
+
+Two complementary mechanisms:
+
+1. **Planned leave — `leave.yaml` (auto-resumes).** Add a date range, e.g.
+   `- {from: 2026-07-10, to: 2026-07-14}`. `should_run.py` skips every day inside the
+   range (inclusive, evaluated in IST) and resumes automatically afterward. Apply with
+   an edit + `./push.sh`. Leaves an audit trail of why a day was skipped.
+2. **Ad-hoc days off — disable the workflow.** Repo → **Actions** tab → select the
+   workflow → **⋯ → Disable workflow**. Stops both runs instantly with no commit;
+   re-enable the same way on return. Trade-off: the user must remember to re-enable.
+
+Single sick-day or same-morning decisions use mechanism 2; known future leave uses
+mechanism 1 so there is nothing to remember.
 
 ## Security — credential handling
 
