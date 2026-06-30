@@ -1,7 +1,7 @@
 name: greytHR Sign Out
 on:
   schedule:
-    - cron: "15 13 * * 1-5"  # 18:45 IST (UTC = IST - 5:30); off the top-of-hour to reduce GitHub scheduler delay
+    - cron: "51 12 * * 1-5"  # 18:45 IST (UTC = IST - 5:30); off the top-of-hour to reduce GitHub scheduler delay
   workflow_dispatch:
 
 jobs:
