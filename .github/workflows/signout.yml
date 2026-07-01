@@ -1,7 +1,10 @@
 name: greytHR Sign Out
 on:
-  schedule:
-    - cron: "51 12 * * 1-5"  # 18:45 IST (UTC = IST - 5:30); off the top-of-hour to reduce GitHub scheduler delay
+  # schedule: disabled — runs are triggered externally by cron-job.org calling
+  # the workflow_dispatch API at 18:30 IST (GitHub's schedule: is best-effort and
+  # was delaying runs by hours). Re-enable by uncommenting the two lines below.
+  # schedule:
+  #   - cron: "51 12 * * 1-5"  # 18:45 IST (UTC = IST - 5:30)
   workflow_dispatch:
 
 jobs:
