@@ -1,0 +1,42 @@
+name: Mark Leave
+on:
+  workflow_dispatch:
+    inputs:
+      from:
+        description: "Start date YYYY-MM-DD (blank = today IST)"
+        required: false
+        default: ""
+      to:
+        description: "End date YYYY-MM-DD (blank = same as from)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  mark-leave:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Append leave range
+        env:
+          IN_FROM: ${{ inputs.from }}
+          IN_TO: ${{ inputs.to }}
+        run: python add_leave.py --from "$IN_FROM" --to "$IN_TO"
+      - name: Commit if changed
+        run: |
+          if [[ -n "$(git status --porcelain leave.yaml)" ]]; then
+            git config user.name "daily-swipe-bot"
+            git config user.email "actions@users.noreply.github.com"
+            git add leave.yaml
+            git commit -m "chore: record leave via mark-leave [skip ci]"
+            git push
+          else
+            echo "No change — range already present."
+          fi
