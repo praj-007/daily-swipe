@@ -1,2 +1,3 @@
 # Personal leave ranges to skip (inclusive). Auto-resumes after `to`.
 # - {from: 2026-07-10, to: 2026-07-14}
+- {from: 2026-07-07, to: 2026-07-07}
