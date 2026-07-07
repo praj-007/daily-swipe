@@ -1,7 +1,8 @@
 name: greytHR Sign Out
 on:
   # schedule: disabled — runs are triggered externally by cron-job.org calling
-  # the workflow_dispatch API at 18:30 IST (GitHub's schedule: is best-effort and
+  # the workflow_dispatch API at 18:45 IST; a random 0-30 min delay inside the job
+  # lands the swipe between 18:45 and 19:15. (GitHub's schedule: is best-effort and
   # was delaying runs by hours). Re-enable by uncommenting the two lines below.
   # schedule:
   #   - cron: "51 12 * * 1-5"  # 18:45 IST (UTC = IST - 5:30)
@@ -20,6 +21,12 @@ jobs:
       - name: Decide whether today is a working day (IST)
         id: check
         run: python should_run.py
+      - name: Random delay (0-30 min, so the swipe lands 18:45-19:15 IST)
+        if: steps.check.outputs.should_run == 'true'
+        run: |
+          DELAY=$(( RANDOM % 1801 ))
+          echo "Delaying $((DELAY / 60))m $((DELAY % 60))s -> swipe ~$(TZ=Asia/Kolkata date -d "+${DELAY} seconds" '+%H:%M') IST"
+          sleep "$DELAY"
       - name: Install Chromium browser
         if: steps.check.outputs.should_run == 'true'
         run: python -m playwright install --with-deps chromium
