@@ -16,6 +16,10 @@ or vacation days.
 - **Scheduling** — the workflows are triggered by cron-job.org calling the GitHub
   `workflow_dispatch` API at your chosen times. (GitHub's own `schedule:` is
   best-effort and was delaying runs by hours, so it isn't used.)
+- **Randomized swipe time** — each run sleeps a random delay before swiping, so the
+  recorded time isn't identical every day: sign-in lands **09:30–09:45**, sign-out
+  **18:45–19:15** (windows start at the cron trigger time; tweak the `Random delay`
+  step in the workflows to change them).
 
 ---
 
@@ -32,7 +36,10 @@ with **timezone `Asia/Kolkata`**:
 | Job | Cron (IST) | Method + URL |
 |-----|-----------|--------------|
 | Sign in | `30 9 * * 1-5` | `POST https://api.github.com/repos/<you>/<repo>/actions/workflows/signin.yml/dispatches` |
-| Sign out | `30 18 * * 1-5` | `POST https://api.github.com/repos/<you>/<repo>/actions/workflows/signout.yml/dispatches` |
+| Sign out | `45 18 * * 1-5` | `POST https://api.github.com/repos/<you>/<repo>/actions/workflows/signout.yml/dispatches` |
+
+The cron time is the **start of the window** — the workflow adds a random delay, so
+the actual swipe lands 09:30–09:45 / 18:45–19:15.
 
 Each job's **headers**:
 ```
@@ -74,11 +81,14 @@ Put the values you observe into **`locators.py`**, then verify without swiping:
 python attendance.py signin --dry-run
 ```
 
-### 6. (Optional) The leave app — mark sick / vacation from your phone
-A small Android app lives in a separate repo (`daily-swipe-leave-app`). It dispatches
-`mark-leave.yml` to add a date range to `leave.yaml` (so sign-in/out skip it). It
-reuses the **same token** from step 4. Build it via its own GitHub Actions workflow
-and sideload the APK.
+### 6. (Optional) Mark sick / vacation from your phone
+Both options dispatch `mark-leave.yml` to add a date range to `leave.yaml` (so
+sign-in/out skip it), reusing the **same token** from step 4:
+
+- **iPhone** — no app needed: two iOS Shortcuts (Sick / Vacation with date prompts).
+  Full recipe: [docs/ios-shortcuts.md](docs/ios-shortcuts.md).
+- **Android** — a small app in a separate repo (`daily-swipe-leave-app`). Build it
+  via its GitHub Actions workflow and sideload the APK.
 
 ---
 
